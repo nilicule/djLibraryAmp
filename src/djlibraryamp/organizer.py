@@ -19,12 +19,17 @@ def build_dest_path(info: TrackInfo, target: Path) -> Path:
         return target / "_Unsorted" / info.original_path.name
 
     artist = sanitize(info.artist)
+    title = sanitize(info.title)
+
+    if not artist or not title:
+        return target / "_Unsorted" / info.original_path.name
+
     album = sanitize(info.album) if info.album else "Singles"
     ext = info.original_path.suffix
 
     if info.track_number is not None:
-        filename = f"{info.track_number:02d} - {sanitize(info.title)}{ext}"
+        filename = f"{info.track_number:02d} - {title}{ext}"
     else:
-        filename = f"{sanitize(info.title)}{ext}"
+        filename = f"{title}{ext}"
 
     return target / artist / album / filename

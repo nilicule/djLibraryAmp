@@ -50,3 +50,8 @@ def test_build_dest_sanitizes_illegal_chars(tmp_path):
     info = _info("Artist: Name", "Album/One", None, "Track: Title")
     result = build_dest_path(info, tmp_path)
     assert result == tmp_path / "Artist Name" / "AlbumOne" / "Track Title.mp3"
+
+
+def test_build_dest_artist_all_illegal_chars_goes_to_unsorted(tmp_path):
+    info = _info("///<>|", "Album", None, "Track", Path("original.mp3"))
+    assert build_dest_path(info, tmp_path) == tmp_path / "_Unsorted" / "original.mp3"
