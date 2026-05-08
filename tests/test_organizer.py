@@ -85,3 +85,89 @@ def test_resolve_conflict_keep_both_increments(tmp_path):
     dest.touch()
     (tmp_path / "track (2).mp3").touch()
     assert resolve_conflict(dest, "keep-both") == tmp_path / "track (3).mp3"
+
+
+from djlibraryamp.organizer import process_library
+
+
+def _make_tagged_mp3(path: Path, title=None, artist=None, album=None, tracknumber=None):
+    from mutagen.id3 import ID3, TIT2, TPE1, TALB, TRCK
+    path.write_bytes(b"\xff\xfb\x90\x00" + b"\x00" * 200)
+    tags = ID3()
+    if title:
+        tags.add(TIT2(encoding=3, text=[title]))
+    if artist:
+        tags.add(TPE1(encoding=3, text=[artist]))
+    if album:
+        tags.add(TALB(encoding=3, text=[album]))
+    if tracknumber:
+        tags.add(TRCK(encoding=3, text=[tracknumber]))
+    tags.save(str(path))
+
+
+def test_process_library_dry_run_prints_not_copies(tmp_path, capsys):
+    source = tmp_path / "source"
+    target = tmp_path / "target"
+    source.mkdir()
+    _make_tagged_mp3(source / "track.mp3", title="Analyser", artist="Adam Beyer",
+                     album="Drumcode 08", tracknumber="5")
+
+    process_library(source, target, dry_run=True, conflict="keep-both")
+
+    out = capsys.readouterr().out
+    assert "[DRY RUN]" in out
+    assert "Adam Beyer" in out
+    assert not target.exists()
+
+
+def test_process_library_copies_file(tmp_path):
+    source = tmp_path / "source"
+    target = tmp_path / "target"
+    source.mkdir()
+    _make_tagged_mp3(source / "track.mp3", title="Analyser", artist="Adam Beyer",
+                     album="Drumcode 08", tracknumber="5")
+
+    process_library(source, target, dry_run=False, conflict="keep-both")
+
+    assert (target / "Adam Beyer" / "Drumcode 08" / "05 - Analyser.mp3").exists()
+    assert (source / "track.mp3").exists()
+
+
+def test_process_library_unsorted_when_no_tags_or_pattern(tmp_path):
+    source = tmp_path / "source"
+    target = tmp_path / "target"
+    source.mkdir()
+    (source / "unknowntrack.mp3").write_bytes(b"\x00" * 100)
+
+    process_library(source, target, dry_run=False, conflict="keep-both")
+
+    assert (target / "_Unsorted" / "unknowntrack.mp3").exists()
+
+
+def test_process_library_conflict_skip(tmp_path):
+    source = tmp_path / "source"
+    target = tmp_path / "target"
+    source.mkdir()
+    _make_tagged_mp3(source / "track.mp3", title="Analyser", artist="Adam Beyer", album="Drumcode 08")
+    dest = target / "Adam Beyer" / "Drumcode 08" / "Analyser.mp3"
+    dest.parent.mkdir(parents=True)
+    dest.write_bytes(b"existing")
+
+    process_library(source, target, dry_run=False, conflict="skip")
+
+    assert dest.read_bytes() == b"existing"
+
+
+def test_process_library_conflict_keep_both(tmp_path):
+    source = tmp_path / "source"
+    target = tmp_path / "target"
+    source.mkdir()
+    _make_tagged_mp3(source / "track.mp3", title="Analyser", artist="Adam Beyer", album="Drumcode 08")
+    dest = target / "Adam Beyer" / "Drumcode 08" / "Analyser.mp3"
+    dest.parent.mkdir(parents=True)
+    dest.write_bytes(b"existing")
+
+    process_library(source, target, dry_run=False, conflict="keep-both")
+
+    assert dest.exists()
+    assert (target / "Adam Beyer" / "Drumcode 08" / "Analyser (2).mp3").exists()
