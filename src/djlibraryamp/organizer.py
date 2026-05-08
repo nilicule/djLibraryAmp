@@ -75,14 +75,17 @@ def process_library(source: Path, target: Path, dry_run: bool, conflict: str) ->
             counts["skip"] += 1
         else:
             if final_dest != dest:
-                print(f"[CONFLICT] {dest.relative_to(target)} → {final_dest.name}")
+                print(f"[CONFLICT]  {dest.relative_to(target)} → {final_dest.name}")
+            elif dry_run:
+                print(f"[DRY RUN]   {dest.relative_to(target)}")
+            elif dest.exists() and conflict == "overwrite":
+                print(f"[OVERWRITE] {dest.relative_to(target)}")
             else:
-                label = "[DRY RUN]" if dry_run else "[COPY]   "
-                print(f"{label}  {dest.relative_to(target)}")
+                print(f"[COPY]      {dest.relative_to(target)}")
             counts["copy"] += 1
             if not dry_run:
                 final_dest.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(src_file, final_dest)
 
-    if not dry_run:
-        print(f"\nDone: {counts['copy']} copied, {counts['skip']} skipped, {counts['unsorted']} unsorted")
+    prefix = "[DRY RUN] " if dry_run else ""
+    print(f"\n{prefix}Done: {counts['copy']} copied, {counts['skip']} skipped, {counts['unsorted']} unsorted")

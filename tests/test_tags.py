@@ -26,24 +26,9 @@ def test_parse_filename_strips_whitespace():
 from djlibraryamp.tags import read_tags
 
 
-def _make_tagged_mp3(path: Path, title=None, artist=None, album=None, tracknumber=None):
-    from mutagen.id3 import ID3, TIT2, TPE1, TALB, TRCK
-    path.write_bytes(b"\xff\xfb\x90\x00" + b"\x00" * 200)
-    tags = ID3()
-    if title:
-        tags.add(TIT2(encoding=3, text=[title]))
-    if artist:
-        tags.add(TPE1(encoding=3, text=[artist]))
-    if album:
-        tags.add(TALB(encoding=3, text=[album]))
-    if tracknumber:
-        tags.add(TRCK(encoding=3, text=[tracknumber]))
-    tags.save(str(path))
-
-
-def test_read_tags_full_id3(tmp_path):
+def test_read_tags_full_id3(tmp_path, make_tagged_mp3):
     mp3 = tmp_path / "track.mp3"
-    _make_tagged_mp3(mp3, title="Analyser", artist="Adam Beyer", album="Drumcode 08", tracknumber="3/12")
+    make_tagged_mp3(mp3, title="Analyser", artist="Adam Beyer", album="Drumcode 08", tracknumber="3/12")
 
     info = read_tags(mp3)
 
@@ -54,9 +39,9 @@ def test_read_tags_full_id3(tmp_path):
     assert info.original_path == mp3
 
 
-def test_read_tags_track_number_no_total(tmp_path):
+def test_read_tags_track_number_no_total(tmp_path, make_tagged_mp3):
     mp3 = tmp_path / "track.mp3"
-    _make_tagged_mp3(mp3, title="Analyser", artist="Adam Beyer", tracknumber="5")
+    make_tagged_mp3(mp3, title="Analyser", artist="Adam Beyer", tracknumber="5")
 
     info = read_tags(mp3)
 
@@ -85,9 +70,9 @@ def test_read_tags_no_tags_no_pattern(tmp_path):
     assert info.title is None
 
 
-def test_read_tags_malformed_track_number(tmp_path):
+def test_read_tags_malformed_track_number(tmp_path, make_tagged_mp3):
     mp3 = tmp_path / "track.mp3"
-    _make_tagged_mp3(mp3, title="Analyser", artist="Adam Beyer", tracknumber="ABC/12")
+    make_tagged_mp3(mp3, title="Analyser", artist="Adam Beyer", tracknumber="ABC/12")
 
     info = read_tags(mp3)
 
