@@ -2,7 +2,7 @@
 from pathlib import Path
 import pytest
 from djlibraryamp.tags import TrackInfo
-from djlibraryamp.organizer import sanitize, build_dest_path
+from djlibraryamp.organizer import sanitize, build_dest_path, resolve_conflict
 
 
 def _info(artist=None, album=None, track_number=None, title=None, path=Path("track.mp3")):
@@ -55,3 +55,33 @@ def test_build_dest_sanitizes_illegal_chars(tmp_path):
 def test_build_dest_artist_all_illegal_chars_goes_to_unsorted(tmp_path):
     info = _info("///<>|", "Album", None, "Track", Path("original.mp3"))
     assert build_dest_path(info, tmp_path) == tmp_path / "_Unsorted" / "original.mp3"
+
+
+def test_resolve_conflict_no_existing_file(tmp_path):
+    dest = tmp_path / "track.mp3"
+    assert resolve_conflict(dest, "keep-both") == dest
+
+
+def test_resolve_conflict_skip_returns_none(tmp_path):
+    dest = tmp_path / "track.mp3"
+    dest.touch()
+    assert resolve_conflict(dest, "skip") is None
+
+
+def test_resolve_conflict_overwrite_returns_same_path(tmp_path):
+    dest = tmp_path / "track.mp3"
+    dest.touch()
+    assert resolve_conflict(dest, "overwrite") == dest
+
+
+def test_resolve_conflict_keep_both_appends_number(tmp_path):
+    dest = tmp_path / "track.mp3"
+    dest.touch()
+    assert resolve_conflict(dest, "keep-both") == tmp_path / "track (2).mp3"
+
+
+def test_resolve_conflict_keep_both_increments(tmp_path):
+    dest = tmp_path / "track.mp3"
+    dest.touch()
+    (tmp_path / "track (2).mp3").touch()
+    assert resolve_conflict(dest, "keep-both") == tmp_path / "track (3).mp3"

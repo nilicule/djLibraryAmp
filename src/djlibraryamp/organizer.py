@@ -33,3 +33,19 @@ def build_dest_path(info: TrackInfo, target: Path) -> Path:
         filename = f"{title}{ext}"
 
     return target / artist / album / filename
+
+
+def resolve_conflict(dest: Path, mode: str) -> Optional[Path]:
+    if not dest.exists():
+        return dest
+    if mode == "skip":
+        return None
+    if mode == "overwrite":
+        return dest
+    stem, suffix, parent = dest.stem, dest.suffix, dest.parent
+    counter = 2
+    while True:
+        candidate = parent / f"{stem} ({counter}){suffix}"
+        if not candidate.exists():
+            return candidate
+        counter += 1
