@@ -5,6 +5,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
+import mutagen
+from mutagen.easyid3 import EasyID3
+from mutagen.id3 import ID3NoHeaderError
+
 
 @dataclass
 class TrackInfo:
@@ -20,11 +24,6 @@ def parse_filename(stem: str) -> tuple[Optional[str], Optional[str]]:
     if len(parts) >= 2 and parts[0] and parts[1]:
         return parts[0], parts[1]
     return None, None
-
-
-import mutagen
-from mutagen.easyid3 import EasyID3
-from mutagen.id3 import ID3NoHeaderError
 
 
 def read_tags(path: Path) -> TrackInfo:
@@ -53,7 +52,10 @@ def read_tags(path: Path) -> TrackInfo:
         title = (easy_tags.get("title") or [None])[0]
         trck = (easy_tags.get("tracknumber") or [None])[0]
         if trck:
-            track_number = int(trck.split("/")[0])
+            try:
+                track_number = int(trck.split("/")[0])
+            except ValueError:
+                pass
 
     if not artist or not title:
         parsed_artist, parsed_title = parse_filename(path.stem)

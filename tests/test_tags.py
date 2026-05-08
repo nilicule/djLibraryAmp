@@ -83,3 +83,13 @@ def test_read_tags_no_tags_no_pattern(tmp_path):
 
     assert info.artist is None
     assert info.title is None
+
+
+def test_read_tags_malformed_track_number(tmp_path):
+    mp3 = tmp_path / "track.mp3"
+    _make_tagged_mp3(mp3, title="Analyser", artist="Adam Beyer", tracknumber="ABC/12")
+
+    info = read_tags(mp3)
+
+    assert info.track_number is None
+    assert info.title == "Analyser"
