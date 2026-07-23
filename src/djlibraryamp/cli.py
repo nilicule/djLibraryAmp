@@ -14,6 +14,7 @@ from .organizer import process_library
     show_default=True,
     help="How to handle destination conflicts",
 )
-def main(source: Path, target: Path, dry_run: bool, conflict: str) -> None:
+@click.option("--quiet", "-q", is_flag=True, help="Suppress per-file output, print only the summary")
+def main(source: Path, target: Path, dry_run: bool, conflict: str, quiet: bool) -> None:
     """Organize audio files from SOURCE into TARGET based on ID3 tags."""
-    process_library(source, target, dry_run=dry_run, conflict=conflict)
+    process_library(source, target, dry_run=dry_run, conflict=conflict, quiet=quiet)

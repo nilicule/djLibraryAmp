@@ -51,12 +51,16 @@ def resolve_conflict(dest: Path, mode: str) -> Optional[Path]:
         counter += 1
 
 
-def process_library(source: Path, target: Path, dry_run: bool, conflict: str) -> None:
+def process_library(source: Path, target: Path, dry_run: bool, conflict: str, quiet: bool = False) -> None:
     files = sorted(
         f for f in source.rglob("*")
         if f.is_file() and f.suffix.lower() in SUPPORTED_EXTENSIONS
     )
     counts: dict[str, int] = {"copy": 0, "skip": 0, "unsorted": 0}
+
+    def log(message: str) -> None:
+        if not quiet:
+            print(message)
 
     for src_file in files:
         info = read_tags(src_file)
@@ -65,23 +69,23 @@ def process_library(source: Path, target: Path, dry_run: bool, conflict: str) ->
         final_dest = resolve_conflict(dest, conflict)
 
         if is_unsorted:
-            print(f"[UNSORTED] {src_file.name}")
+            log(f"[UNSORTED] {src_file.name}")
             counts["unsorted"] += 1
             if not dry_run and final_dest is not None:
                 final_dest.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(src_file, final_dest)
         elif final_dest is None:
-            print(f"[SKIP]     {dest.relative_to(target)}")
+            log(f"[SKIP]     {dest.relative_to(target)}")
             counts["skip"] += 1
         else:
             if final_dest != dest:
-                print(f"[CONFLICT]  {dest.relative_to(target)} → {final_dest.name}")
+                log(f"[CONFLICT]  {dest.relative_to(target)} → {final_dest.name}")
             elif dry_run:
-                print(f"[DRY RUN]   {dest.relative_to(target)}")
+                log(f"[DRY RUN]   {dest.relative_to(target)}")
             elif dest.exists() and conflict == "overwrite":
-                print(f"[OVERWRITE] {dest.relative_to(target)}")
+                log(f"[OVERWRITE] {dest.relative_to(target)}")
             else:
-                print(f"[COPY]      {dest.relative_to(target)}")
+                log(f"[COPY]      {dest.relative_to(target)}")
             counts["copy"] += 1
             if not dry_run:
                 final_dest.parent.mkdir(parents=True, exist_ok=True)
