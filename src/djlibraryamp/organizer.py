@@ -69,7 +69,7 @@ def process_library(source: Path, target: Path, dry_run: bool, conflict: str, qu
         final_dest = resolve_conflict(dest, conflict)
 
         if is_unsorted:
-            log(f"[UNSORTED] {src_file.name}")
+            print(f"[UNSORTED] {src_file.name}")
             counts["unsorted"] += 1
             if not dry_run and final_dest is not None:
                 final_dest.parent.mkdir(parents=True, exist_ok=True)
